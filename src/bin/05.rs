@@ -21,7 +21,7 @@ pub fn part_one(input: &str) -> Option<u64> {
     };
 
     let count = ingredients
-        .into_iter()
+        .iter()
         .filter(|ing| in_range(&ing, &ranges))
         .count();
 
@@ -77,7 +77,7 @@ pub fn part_two(input: &str) -> Option<u64> {
         i += 1;
     }
 
-    let range_length = result.into_iter().map(|(from, to)| to - from + 1).sum();
+    let range_length = result.iter().map(|(from, to)| to - from + 1).sum();
 
     Some(range_length)
 }
