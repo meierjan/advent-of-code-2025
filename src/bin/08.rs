@@ -2,7 +2,7 @@ use std::collections::{BTreeSet, HashSet};
 
 advent_of_code::solution!(8);
 
-type Vertex = (u64, u64, u64);
+type Vertex = (u64, u64, u64, usize);
 type Edge = (Vertex, Vertex, f64);
 type Tree = BTreeSet<Vertex>;
 
@@ -32,9 +32,10 @@ pub fn part_one(input: &str) -> Option<u64> {
 pub fn sol_part_one(iterations: u32, input: &str) -> Option<u64> {
     let vertices: Vec<Vertex> = input
         .lines()
-        .map(|line| {
+        .enumerate()
+        .map(|(i, line)| {
             let coords: Vec<u64> = line.split(",").map(|num| num.parse().unwrap()).collect();
-            return (coords[0], coords[1], coords[2]);
+            return (coords[0], coords[1], coords[2], i);
         })
         .collect();
 
@@ -98,11 +99,20 @@ pub fn sol_part_one(iterations: u32, input: &str) -> Option<u64> {
 }
 
 pub fn part_two(input: &str) -> Option<u64> {
+    fn get_parent(v_id: usize, parents: &Vec<usize>) -> usize {
+        if v_id == parents[v_id] {
+            return v_id;
+        } else {
+            return get_parent(parents[v_id], parents);
+        }
+    }
+
     let vertices: Vec<Vertex> = input
         .lines()
-        .map(|line| {
+        .enumerate()
+        .map(|(i, line)| {
             let coords: Vec<u64> = line.split(",").map(|num| num.parse().unwrap()).collect();
-            return (coords[0], coords[1], coords[2]);
+            return (coords[0], coords[1], coords[2], i);
         })
         .collect();
 
@@ -119,38 +129,19 @@ pub fn part_two(input: &str) -> Option<u64> {
     }
     edges.sort_by(|p1, p2| p1.2.partial_cmp(&p2.2).unwrap());
 
-    let mut forest: HashSet<BTreeSet<Vertex>> = vertices
-        .into_iter() // Notice into_iter() to take ownership
-        .map(|vertex| {
-            let mut set = BTreeSet::new();
-            set.insert(vertex);
-            set
-        })
-        .collect();
+    let mut parents: Vec<usize> = (0..edges.len()).collect();
 
     let mut last_point: Option<&Edge> = None;
 
     for edge in edges.iter() {
-        if !creates_circle(edge, &forest) {
-            let (v_a, v_b, _) = edge;
+        let (v_a, v_b, _) = edge;
 
-            let t_a = forest
-                .iter()
-                .find(|tree| tree.contains(v_a))
-                .cloned()
-                .unwrap();
+        let p_v_a = get_parent(v_a.3, &parents);
+        let p_v_b = get_parent(v_b.3, &parents);
 
-            let t_b = forest
-                .iter()
-                .find(|tree| tree.contains(v_b))
-                .cloned()
-                .unwrap();
+        if p_v_a != p_v_b {
+            parents[p_v_b] = p_v_a;
 
-            let t_a_b: Tree = t_b.union(&t_a).map(|v| *v).collect();
-
-            forest.remove(&t_a);
-            forest.remove(&t_b);
-            forest.insert(t_a_b);
             last_point = Some(edge);
         }
     }
