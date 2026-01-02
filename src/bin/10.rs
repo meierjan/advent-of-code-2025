@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::collections::{HashSet, VecDeque};
 
 advent_of_code::solution!(10);
 
@@ -44,20 +44,6 @@ impl From<&str> for Machine {
     }
 }
 
-fn is_sol(sel: &Vec<usize>, btns: &Vec<Vec<usize>>, sol: &Vec<bool>) -> bool {
-    let mut current = vec![false; sol.len()];
-
-    for s in sel {
-        let bts = &btns[*s];
-
-        for b in bts {
-            current[*b] = !current[*b];
-        }
-    }
-
-    current == *sol
-}
-
 pub fn part_one(input: &str) -> Option<u64> {
     let result: u64 = input
         .lines()
@@ -65,26 +51,35 @@ pub fn part_one(input: &str) -> Option<u64> {
         .into_iter()
         .map(|machine| {
             let buttons_def = machine.buttons;
-            let button_count = buttons_def.len();
 
             let solution: Vec<bool> = machine.lights.into_iter().collect();
 
-            let initial: Vec<Vec<usize>> = (0..button_count).map(|b| vec![b]).collect();
+            let initial: Vec<(Vec<bool>, u64)> = vec![(vec![false; solution.len()], 0u64)];
             let mut queue = VecDeque::from(initial);
 
+            let mut seen: HashSet<Vec<bool>> = HashSet::new();
+
             loop {
-                let current_btn_config = &queue.pop_front().unwrap();
+                let (current, d) = &queue.pop_front().unwrap();
 
-                if is_sol(current_btn_config, &buttons_def, &solution) {
-                    return current_btn_config.len() as u64;
+                if seen.contains(current) {
+                    continue;
                 }
 
-                for b_i in 0..button_count {
-                    let mut new_btn_config = current_btn_config.clone();
-                    new_btn_config.push(b_i);
+                for button in buttons_def.iter() {
+                    let mut new_config = current.clone();
+                    for b in button {
+                        new_config[*b] = !new_config[*b];
+                    }
 
-                    queue.push_back(new_btn_config);
+                    if new_config == solution {
+                        return *d + 1;
+                    }
+
+                    queue.push_back((new_config, d + 1));
                 }
+
+                seen.insert(current.clone());
             }
         })
         .sum();
